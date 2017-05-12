@@ -3,7 +3,7 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=luci-app-syncdial
 PKG_VERSION:=20170513
 PKG_RELEASE:=1
-PKG_MAINTAINER:=fw867
+PKG_MAINTAINER:=monokoo
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)
 #PKG_USE_MIPS16:=0
@@ -32,7 +32,7 @@ if [ -z "$${IPKG_INSTROOT}" ]; then
 	if [ -f /etc/uci-defaults/luci-syncdial ]; then
 		( . /etc/uci-defaults/luci-syncdial ) && rm -f /etc/uci-defaults/luci-syncdial
 	fi
-	rm -rf /tmp/luci-indexcache /tmp/luci-modulecache
+	rm -rf /tmp/luci-indexcache
 fi
 exit 0
 endef
@@ -46,17 +46,13 @@ endef
 define Build/Compile
 endef
 
-define Package/$(PKG_NAME)/postrm
-exit 0
-endef
-
 define Package/$(PKG_NAME)/install
 
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./files/etc/uci-defaults/luci-syncdial $(1)/etc/uci-defaults/luci-syncdial
 
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
-	$(INSTALL_CONF) ./files/etc/hotplug.d/iface/01-dialcheck $(1)/etc/hotplug.d/iface/01-dialcheck
+	$(INSTALL_BIN) ./files/etc/hotplug.d/iface/01-dialcheck $(1)/etc/hotplug.d/iface/01-dialcheck
 	
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/etc/config/syncdial $(1)/etc/config/

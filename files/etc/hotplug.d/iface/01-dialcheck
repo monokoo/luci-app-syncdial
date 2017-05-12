@@ -1,9 +1,5 @@
 #!/bin/sh
-[ "$ACTION" = "ifdown" ] &&	\
-[ $(ps | grep "pppconnectcheck"|grep -v grep|wc -l) -eq 0 ] && {
-	logger -t PPPoE-dialChecker "pppconnectcheck started by dialcheck" 
-	pppconnectcheck &
-}
+[ "$ACTION" = "ifdown" ] &&	pppconnectcheck &
 
 wanselect=$(uci get syncdial.config.wanselect)
 [ "$(uci get syncdial.config.dial_type)" = "2" ] && {
