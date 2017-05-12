@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006-2011 OpenWrt.org
+# Written by 981213
+. /lib/functions.sh
+START=99
+boot() {
+	/bin/pppconnectcheck &
+}

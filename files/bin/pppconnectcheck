@@ -1,0 +1,69 @@
+#!/bin/sh
+#PPPoE拨号在线接口数检测及重拨脚本
+#Copyright (C) 2015 GuoGuo<gch981213@gmail.com>
+. /lib/functions.sh
+
+[ -f /etc/config/syncdial ] || {
+	return 1
+}
+
+#操作配置
+#参数 $1 配置项
+ifs_opt_down() {
+	local ifn=$1
+	local ifprefix=${ifn:0:4}
+
+	[ "$ifprefix" = "vwan" ] || return
+	ifdown $ifn
+}
+
+ifs_opt_up() {
+	local ifn=$1
+	local ifprefix=${ifn:0:4}
+
+	[ "$ifprefix" = "vwan" ] || return
+	ifup $ifn
+}
+
+config_load "syncdial"
+config_get_bool dialchk config dialchk 0
+config_get_bool old_frame config old_frame
+config_get dial config dialnum
+config_get dialwait config dialwait 20
+config_get wanselect config wanselect
+config_get dial_type config dial_type
+[ $dial_type -eq 2 ] && {
+config_get wanselect2 config wanselect2
+}
+
+[ "$dialchk" = "0" ] && {
+	echo "dial check disabled."
+	return 0
+}
+if [ $dial_type -eq 2 ]; then
+	[ $(ps | grep -v grep | grep -c "pppconnectcheck") -gt 4 ] && logger -t PPPoE-IFChecker "Another checker is running.exit." && return 1
+else
+	[ $(ps | grep -v grep | grep -c "pppconnectcheck") -gt 2 ] && logger -t PPPoE-IFChecker "Another checker is running.exit." && return 1
+fi
+sleep 5
+PPPUPNUM=$(mwan3 status | grep -v grep | grep -c "is online and tracking")
+logger -t PPPoE-IFChecker "$PPPUPNUM interfaces are online."
+if [ "$PPPUPNUM" -lt $dial ]
+then
+	logger -t PPPoE-IFChecker "Stop interfaces."
+	[ $old_frame -eq 0 ] && ifdown $wanselect
+	[ $dial_type -eq 2 ] && ifdown $wanselect2
+	config_load "network"
+	config_foreach ifs_opt_down "interface"
+	sleep $dialwait
+	logger -t PPPoE-IFChecker "Start interfaces."
+	config_foreach ifs_opt_up "interface"
+	[ $old_frame -eq 0 ] && ifup $wanselect
+	[ $dial_type -eq 2 ] && ifup $wanselect2
+	logger -t PPPoE-IFChecker "Interfaces restarted."
+	logger -t PPPoE-IFChecker "Another checker will be started 60s later."
+	sleep 60 && pppconnectcheck &
+else
+	logger -t PPPoE-IFChecker "Nothing to do.Exit."
+fi
+return 0
