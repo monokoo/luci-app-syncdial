@@ -26,6 +26,7 @@ ifs_opt_up() {
 }
 
 config_load "syncdial"
+config_get_bool enabled config enabled 0
 config_get_bool dialchk config dialchk 0
 config_get_bool old_frame config old_frame
 config_get dial config dialnum
@@ -34,6 +35,12 @@ config_get wanselect config wanselect
 config_get dial_type config dial_type
 [ $dial_type -eq 2 ] && {
 config_get wanselect2 config wanselect2
+}
+
+[ "$enabled" = "0" ] && {
+	echo "syncdial is disabled."
+	logger -t PPPoE-IFChecker "Syncdial is not enabled. Exit pppconnectcheck."
+	return 0
 }
 
 [ "$dialchk" = "0" ] && {
