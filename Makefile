@@ -59,6 +59,10 @@ define Package/$(PKG_NAME)/install
 	
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/etc/init.d/* $(1)/etc/init.d/
+
+	$(INSTALL_DIR) $(1)/bin
+	$(INSTALL_BIN) ./files/bin/genwancfg $(1)/bin/genwancfg
+	$(INSTALL_BIN) ./files/bin/pppconnectcheck $(1)/bin/pppconnectcheck
 	
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller
 	$(INSTALL_DATA) ./files/usr/lib/lua/luci/controller/*.lua $(1)/usr/lib/lua/luci/controller/
