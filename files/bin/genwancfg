@@ -155,7 +155,10 @@ general_config_remove() {
 	[ $(uci get network.$wanselect.proto) == "none" ] && {
 		uci set network.$wanselect.proto=pppoe
 	}
-	[ $nomwan -ne 1 ] && mwan_cfg_del $wanselect
+	
+	[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
+		[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
+			[ $nomwan -ne 1 ] && mwan_cfg_del $wanselect
 
 	[ $dial_type -eq 2 ] && {
 		for i in $(seq 1 $wannum2)
@@ -165,7 +168,10 @@ general_config_remove() {
 		[ $(uci get network.$wanselect2.proto) == "none" ] && {
 			uci set network.$wanselect2.proto=pppoe
 		}
-		[ $nomwan -ne 1 ] && mwan_cfg_del $wanselect2
+
+		[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
+			[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
+				[ $nomwan -ne 1 ] && mwan_cfg_del $wanselect2
 	}
 }
 
