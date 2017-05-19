@@ -11,6 +11,7 @@ norun=$(echo $origfirewall|grep vwan)
 nomwan=$(uci get syncdial.config.nomwan)
 wanselect=$(uci get syncdial.config.wanselect)
 wannum=$(uci get syncdial.config.wannum)
+oldframe=$(uci get syncdial.config.old_frame)
 
 dial_type=$(uci get syncdial.config.dial_type)
 [ $dial_type -eq 2 ] && {
@@ -111,11 +112,18 @@ general_config_load() {
 	config_get_bool enabled 'config' 'enabled'
 	config_get_bool old_frame 'config' 'old_frame'
 	congig_get_bool dial_type 'config' 'dial_type'
-	[ $enabled -eq 0 ] && {
+
+	if [ $enabled -eq 0 ]; then
+		if [ $old_frame -eq 1 ]; then
+			mwan_cfg_add $wanselect
+			if [ $dial_type -eq 2 ]; then
+				mwan_cfg_add $wanselect2
+			fi
+		fi
 		echo "Disabled.Exit now."
 		apply_cfg
 		exit 1
-	}
+	fi
   
 	config_load 'network'
 	config_get pppoe_user $wanselect 'username'
@@ -155,10 +163,14 @@ general_config_remove() {
 	[ $(uci get network.$wanselect.proto) == "none" ] && {
 		uci set network.$wanselect.proto=pppoe
 	}
-	
-	[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
+
+	if [ $oldframe -eq 0 ]; then
+		[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
 		[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
 			[ $nomwan -ne 1 ] && mwan_cfg_del $wanselect
+	else
+		[ $nomwan -ne 1 ] && mwan_cfg_del $wanselect
+	fi
 
 	[ $dial_type -eq 2 ] && {
 		for i in $(seq 1 $wannum2)
@@ -168,10 +180,14 @@ general_config_remove() {
 		[ $(uci get network.$wanselect2.proto) == "none" ] && {
 			uci set network.$wanselect2.proto=pppoe
 		}
-
-		[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
+		
+		if [ $oldframe -eq 0 ]; then
+			[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
 			[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
 				[ $nomwan -ne 1 ] && mwan_cfg_del $wanselect2
+		else
+			[ $nomwan -ne 1 ] && mwan_cfg_del $wanselect2
+		fi
 	}
 }
 
