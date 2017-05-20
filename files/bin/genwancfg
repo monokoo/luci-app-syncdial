@@ -29,7 +29,7 @@ dial_type=$(uci get syncdial.config.dial_type)
 }
 
 #添加MWAN负载均衡相关配置
-#$1:接口名称
+#$1:接口名称 $2:第几个vwan
 mwan_cfg_add() {
 	#gen mwan3_interface
 	uci set mwan3.${1}=interface
@@ -49,16 +49,33 @@ mwan_cfg_add() {
 	uci set mwan3.${1}_m1_w1.interface=${1}
 	uci set mwan3.${1}_m1_w1.metric=1
 	uci set mwan3.${1}_m1_w1.weight=1
+	
 	#gen mwan3_policy
 	uci add_list mwan3.balanced.use_member=${1}_m1_w1
+	
+	#added member to wan_only policy for fail up
+	uci set mwan3.${1}_m$((${2}+1))_w1=member
+	uci set mwan3.${1}_m$((${2}+1))_w1.interface=${1}
+	uci set mwan3.${1}_m$((${2}+1))_w1.metric=$((${2}+1))
+	uci set mwan3.${1}_m$((${2}+1))_w1.weight=1
+	[ -z "uci get mwan3.wan_only 2>/dev/null" ] && {
+		uci set mwan3.wan_only=policy
+		uci set mwan3.wan_only.use_member='wan_m1_w1'
+		uci set mwan3.wan_only.last_resort='default'
+	}
+	uci add_list mwan3.wan_only.use_member=${1}_m$((${2}+1))_w1
 }
 
 #删除MWAN负载均衡相关配置
-#$1:接口名称
+#$1:接口名称 $2:第几个vwan
 mwan_cfg_del() {
 	uci del mwan3.${1}
 	uci del mwan3.${1}_m1_w1
+	uci del mwan3.${1}_m$((${2}+1))_w1
 	uci del_list mwan3.balanced.use_member=${1}_m1_w1
+	[ -n "uci get mwan3.wan_only 2>/dev/null" ] && {
+		uci del_list mwan3.wan_only.use_member=${1}_m$((${2}+1))_w1
+	}
 }
 
 #添加macvlan设备
@@ -144,10 +161,12 @@ check_remove_device() {
 
 check_remove_interface() {
 	local ifcfg=${1}
+	local 
 	[ ${ifcfg::4} == 'vwan' ] && {
 		uci del network.${ifcfg}
+		vnum=${ifcfg:4}
 		uci del_list firewall.@zone[1].network=${ifcfg}
-		[ $nomwan -ne 1 ] && mwan_cfg_del ${ifcfg} 
+		[ $nomwan -ne 1 ] && mwan_cfg_del ${ifcfg} $vnum
 	}
 	uci set firewall.@zone[1].network="$backupdev"
 }
@@ -217,7 +236,7 @@ uci set network.$wanselect.metric=40
 	do
 		[ $old_frame -eq 0 ] && macvlan_dev_add macvlan$i $pppoe_ifname
 		pppoe_if_add vwan$i macvlan$i $pppoe_user $pppoe_password $((40+$i))
-		[ $nomwan -ne 1 ] && mwan_cfg_add vwan$i
+		[ $nomwan -ne 1 ] && mwan_cfg_add vwan$i $i
 	done
 }
 
@@ -245,7 +264,7 @@ uci set network.$wanselect.metric=40
 		do
 			[ $old_frame -eq 0 ] && macvlan_dev_add macvlan$(($wannum+$i)) $pppoe_ifname2
 			pppoe_if_add vwan$(($wannum+$i)) macvlan$(($wannum+$i)) $pppoe_user2 $pppoe_password2 $((60+$i))
-			[ $nomwan -ne 1 ] && mwan_cfg_add vwan$(($wannum+$i))
+			[ $nomwan -ne 1 ] && mwan_cfg_add vwan$(($wannum+$i)) $i
 		done
 	}
 }
