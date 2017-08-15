@@ -197,59 +197,62 @@ general_config_remove
 general_config_load
 
 uci set network.$wanselect.metric=40
-
-[ $old_frame -eq 1 ] && {
-	uci set network.$wanselect.proto=none
-	ifname=$(uci get network.$wanselect.ifname)
-	for i in $(seq 1 $wannum)
-	do
-		ip link add link $ifname name macvlan$i type macvlan
-		ifconfig macvlan$i hw ether $(echo $(cat /sys/class/net/$ifname/address|awk -F ":" '{print $1":"$2":"$3":"$4":"$5":" }')$(echo "" | awk -F ":" '{printf("%X\n", 16+i);}' i=$i))
-		ifconfig macvlan$i up
-	done
-}
-[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
-	[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
-		[ $old_frame -eq 0 -a $nomwan -ne 1 ] && mwan_cfg_add $wanselect
-
-[ $wannum -gt 0 ] && {
+if [ $wannum -gt 0 ]; then
+	[ $old_frame -eq 1 ] && {
+		uci set network.$wanselect.proto=none
+		ifname=$(uci get network.$wanselect.ifname)
+		for i in $(seq 1 $wannum)
+		do
+			ip link add link $ifname name macvlan$i type macvlan
+			ifconfig macvlan$i hw ether $(echo $(cat /sys/class/net/$ifname/address|awk -F ":" '{print $1":"$2":"$3":"$4":"$5":" }')$(echo "" | awk -F ":" '{printf("%X\n", 16+i);}' i=$i))
+			ifconfig macvlan$i up
+		done
+	}
+	[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
+		[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
+			[ $old_frame -eq 0 -a $nomwan -ne 1 ] && mwan_cfg_add $wanselect
+	
+	
 	for i in $(seq 1 $wannum)
 	do
 		[ $old_frame -eq 0 ] && macvlan_dev_add macvlan$i $pppoe_ifname
 		pppoe_if_add vwan$i macvlan$i $pppoe_user $pppoe_password $((40+$i))
 		[ $nomwan -ne 1 ] && mwan_cfg_add vwan$i
 	done
-}
+else
+	[ "$nomwan" -ne 1 ] && mwan_cfg_add $wanselect
+fi
 
 ###dualdial configuration
-[ "$(uci get syncdial.config.dial_type)" = "2" ] && {
+[ "$(uci -q get syncdial.config.dial_type)" = "2" ] && {
 
 	uci set network.$wanselect2.metric=60
-	
-	[ $old_frame -eq 1 ] && {
-	  uci set network.$wanselect2.proto=none
-		ifname2=$(uci get network.$wanselect2.ifname)
-		for i in $(seq 1 $wannum2)
-		do
-			ip link add link $ifname2 name macvlan$(($wannum+$i)) type macvlan
-			ifconfig macvlan$(($wannum+$i)) hw ether $(echo $(cat /sys/class/net/$ifname2/address|awk -F ":" '{print $1":"$2":"$3":"$4":"$5":" }')$(echo "" | awk -F ":" '{printf("%X\n", 16+i);}' i=$i))
-			ifconfig macvlan$(($wannum+$i)) up
-		done
-	}
-	[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
-		[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
-			[ $old_frame -eq 0 -a $nomwan -ne 1 ] && mwan_cfg_add $wanselect2
-	
-	[ $wannum2 -gt 0 ] && {
+	if [ $wannum2 -gt 0 ]; then
+		[ $old_frame -eq 1 ] && {
+			uci set network.$wanselect2.proto=none
+			ifname2=$(uci get network.$wanselect2.ifname)
+			for i in $(seq 1 $wannum2)
+			do
+				ip link add link $ifname2 name macvlan$(($wannum+$i)) type macvlan
+				ifconfig macvlan$(($wannum+$i)) hw ether $(echo $(cat /sys/class/net/$ifname2/address|awk -F ":" '{print $1":"$2":"$3":"$4":"$5":" }')$(echo "" | awk -F ":" '{printf("%X\n", 16+i);}' i=$i))
+				ifconfig macvlan$(($wannum+$i)) up
+			done
+		}
+		[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
+			[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
+				[ $old_frame -eq 0 -a $nomwan -ne 1 ] && mwan_cfg_add $wanselect2
+		
+		
 		for i in $(seq 1 $wannum2)
 		do
 			[ $old_frame -eq 0 ] && macvlan_dev_add macvlan$(($wannum+$i)) $pppoe_ifname2
 			pppoe_if_add vwan$(($wannum+$i)) macvlan$(($wannum+$i)) $pppoe_user2 $pppoe_password2 $((60+$i))
 			[ $nomwan -ne 1 ] && mwan_cfg_add vwan$(($wannum+$i))
 		done
-	}
+	else
+		[ "$nomwan" -ne 1 ] && mwan_cfg_add $wanselect2
+	fi
 }
-
 
 orig_firewall_add
 apply_cfg
