@@ -23,22 +23,26 @@ o.rmempty=false
 o=s:option(Value,"wannum","虚拟WAN接口数量")
 o.datatype="range(0,249)"
 o.optional=false
-o=s:option(Value,"wanselect2",translate("选择第二个外网接口"),translate("指定要多拨的第二个外网接口，如wan2"))
+o.default=1
+o=s:option(Value,"wanselect2",translate("选择第二个外网接口"),translate("<font color=\"red\">指定要多拨的第二个外网接口，如wan2</font>"))
 luci.tools.webadmin.cbi_add_networks(o)
 o.optional=false
 o:depends("dial_type","2")
 o=s:option(Value,"wannum2",translate("第二条线虚拟WAN接口数量"),translate("设置第二条线的拨号数"))
 o.datatype="range(0,249)"
 o.optional=false
+o.default=1
 o:depends("dial_type","2")
 o=s:option(Flag,"dialchk","启用掉线检测")
 o.rmempty=false
 o=s:option(Value,"dialnum","最低在线接口数量","如果在线接口数量小于这个值则重拨。")
 o.datatype="range(0,248)"
 o.optional=false
-o=s:option(Value,"dialnum2","第二条线最低在线接口数量","如果在线接口数量小于这个值则重拨。")
+o.default=2
+o=s:option(Value,"dialnum2","第二条线最低在线接口数量","如果第二条线在线接口数量小于这个值则重拨。")
 o.datatype="range(0,248)"
 o.optional=false
+o.default=2
 o:depends("dial_type","2")
 o=s:option(Value,"dialwait","重拨等待时间","重拨时，接口全部下线后下一次拨号前的等待时间。单位：秒 最小值：5秒")
 o.datatype="and(uinteger,min(5))"
