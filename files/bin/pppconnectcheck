@@ -7,34 +7,65 @@
 	return 1
 }
 
-#操作配置
-#参数 $1 配置项
-ifs_opt_down() {
-	local ifn=$1
-	local ifprefix=${ifn:0:4}
-
-	[ "$ifprefix" = "vwan" ] || return
-	ifdown $ifn
+action_interface(){
+	local action=$1
+	local wan_action=$2
+	local first_device=$3
+	for device in $first_device
+	do
+		if [ "$device" = "$wan_action" ]; then
+			[ "$old_frame" -eq 0 ] && {
+				logger -t PPPoE-IFChecker "Interfaces: $wan_action; Action: $action"
+				$action $wan_action
+			}
+		else
+			logger -t PPPoE-IFChecker "Interfaces: $device; Action: $action"
+			$action $device
+		fi
+	done
 }
 
-ifs_opt_up() {
-	local ifn=$1
-	local ifprefix=${ifn:0:4}
-
-	[ "$ifprefix" = "vwan" ] || return
-	ifup $ifn
+sync_redial(){
+	local wan_select=$1
+	local dialnum=$2
+	p_ifname=`uci -q get network.$wan_select.ifname`
+	ppp_num=`mwan3 interfaces | grep -v grep | grep -w "$wan_select" | grep -c "is online and tracking"`
+	s_ifname=`uci show network| grep macvlandev_macvlan | grep "ifname='$p_ifname'"|awk -F'.' '{print $2}' |awk -F'_' '{print $2}'`
+	first_device=$wan_select
+	for ifname in $s_ifname
+	do
+		s_device=`uci show network| grep "ifname='$ifname" |awk -F'.' '{print $2}'`
+		s_online_num=`mwan3 interfaces | grep -v grep | grep -w "$s_device" | grep -c "is online and tracking"`
+		ppp_num=$(($ppp_num + $s_online_num))
+		first_device="$first_device $s_device"
+	done
+	
+	logger -t PPPoE-IFChecker "$ppp_num interfaces come from $wan_select are online."
+	if [ "$ppp_num" -lt $dialnum ]; then
+		logger -t PPPoE-IFChecker "Stop all interfaces created by $wan_select."
+		action_interface ifdown $wan_select "$first_device"
+		sleep $dialwait
+		logger -t PPPoE-IFChecker "Start all interfaces created by $wan_select."
+		action_interface ifup $wan_select "$first_device"
+		logger -t PPPoE-IFChecker "Interfaces come from $wan_select have been restarted."
+		logger -t PPPoE-IFChecker "Another checker will be started 60s later."
+		sleep 60 && pppconnectcheck &
+	else
+		logger -t PPPoE-IFChecker "Nothing to do for the origin interface: $wan_select. Exit."
+	fi
 }
 
 config_load "syncdial"
 config_get_bool enabled config enabled 0
 config_get_bool dialchk config dialchk 0
 config_get_bool old_frame config old_frame
-config_get dial config dialnum
+config_get dial config dialnum 0
+config_get dial2 config dialnum2 0
 config_get dialwait config dialwait 20
 config_get wanselect config wanselect
 config_get dial_type config dial_type
-[ $dial_type -eq 2 ] && {
-config_get wanselect2 config wanselect2
+[ "$dial_type" -eq 2 ] && {
+	config_get wanselect2 config wanselect2
 }
 
 [ "$enabled" = "0" ] && {
@@ -47,30 +78,19 @@ config_get wanselect2 config wanselect2
 	echo "dial check disabled."
 	return 0
 }
-if [ $dial_type -eq 2 ]; then
+if [ "$dial_type" -eq 2 ]; then
 	[ $(ps | grep -v grep | grep -c "pppconnectcheck") -gt 4 ] && logger -t PPPoE-IFChecker "Another checker is running.exit." && return 1
 else
 	[ $(ps | grep -v grep | grep -c "pppconnectcheck") -gt 2 ] && logger -t PPPoE-IFChecker "Another checker is running.exit." && return 1
 fi
-sleep 5
-PPPUPNUM=$(mwan3 status | grep -v grep | grep -c "is online and tracking")
-logger -t PPPoE-IFChecker "$PPPUPNUM interfaces are online."
-if [ "$PPPUPNUM" -lt $dial ]
-then
-	logger -t PPPoE-IFChecker "Stop interfaces."
-	[ $old_frame -eq 0 ] && ifdown $wanselect
-	[ $dial_type -eq 2 ] && ifdown $wanselect2
-	config_load "network"
-	config_foreach ifs_opt_down "interface"
-	sleep $dialwait
-	logger -t PPPoE-IFChecker "Start interfaces."
-	config_foreach ifs_opt_up "interface"
-	[ $old_frame -eq 0 ] && ifup $wanselect
-	[ $dial_type -eq 2 ] && ifup $wanselect2
-	logger -t PPPoE-IFChecker "Interfaces restarted."
-	logger -t PPPoE-IFChecker "Another checker will be started 60s later."
-	sleep 60 && pppconnectcheck &
+sleep 10s
+if [ "$dial_type" -eq 2 ]; then
+	#二条线掉线检测
+	sync_redial $wanselect $dial &
+	sync_redial $wanselect2 $dial2
 else
-	logger -t PPPoE-IFChecker "Nothing to do.Exit."
+	#一条线掉线检测
+	sync_redial $wanselect $dial
 fi
+
 return 0

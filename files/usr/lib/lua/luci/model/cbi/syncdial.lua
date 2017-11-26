@@ -36,6 +36,10 @@ o.rmempty=false
 o=s:option(Value,"dialnum","最低在线接口数量","如果在线接口数量小于这个值则重拨。")
 o.datatype="range(0,248)"
 o.optional=false
+o=s:option(Value,"dialnum2","第二条线最低在线接口数量","如果在线接口数量小于这个值则重拨。")
+o.datatype="range(0,248)"
+o.optional=false
+o:depends("dial_type","2")
 o=s:option(Value,"dialwait","重拨等待时间","重拨时，接口全部下线后下一次拨号前的等待时间。单位：秒 最小值：5秒")
 o.datatype="and(uinteger,min(5))"
 o.optional=false
