@@ -78,11 +78,9 @@ config_get dial_type config dial_type
 	echo "dial check disabled."
 	return 0
 }
-if [ "$dial_type" -eq 2 ]; then
-	[ $(ps | grep -v grep | grep -c "pppconnectcheck") -gt 4 ] && logger -t PPPoE-IFChecker "Another checker is running.exit." && return 1
-else
-	[ $(ps | grep -v grep | grep -c "pppconnectcheck") -gt 2 ] && logger -t PPPoE-IFChecker "Another checker is running.exit." && return 1
-fi
+
+[ $(ps | grep -v grep | grep -c "pppconnectcheck") -gt 2 ] && logger -t PPPoE-IFChecker "Another checker is running.exit." && return 1
+
 sleep 10s
 if [ "$dial_type" -eq 2 ]; then
 	#二条线掉线检测
