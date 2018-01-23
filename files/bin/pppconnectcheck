@@ -7,6 +7,15 @@
 	return 1
 }
 
+get_ppp_num(){
+	if [ -n "$(ubus call network.interface.$1 status 2>/dev/null | jsonfilter -e '@.route[@].nexthop' 2>/dev/null)" ]; then
+		ppp_num=1
+	else
+		ppp_num=0
+	fi
+	echo -n $ppp_num
+}
+
 action_interface(){
 	local action=$1
 	local wan_action=$2
@@ -29,13 +38,13 @@ sync_redial(){
 	local wan_select=$1
 	local dialnum=$2
 	p_ifname=`uci -q get network.$wan_select.ifname`
-	ppp_num=`mwan3 interfaces | grep -v grep | grep -w "$wan_select" | grep -c "is online and tracking"`
+	ppp_num=$(get_ppp_num $wan_select)
 	s_ifname=`uci show network| grep macvlandev_macvlan | grep "ifname='$p_ifname'"|awk -F'.' '{print $2}' |awk -F'_' '{print $2}'`
 	first_device=$wan_select
 	for ifname in $s_ifname
 	do
 		s_device=`uci show network| grep "ifname='$ifname" |awk -F'.' '{print $2}'`
-		s_online_num=`mwan3 interfaces | grep -v grep | grep -w "$s_device" | grep -c "is online and tracking"`
+		s_online_num=$(get_ppp_num $s_device)
 		ppp_num=$(($ppp_num + $s_online_num))
 		first_device="$first_device $s_device"
 	done
@@ -81,7 +90,7 @@ config_get dial_type config dial_type
 
 [ $(ps | grep -v grep | grep -c "pppconnectcheck") -gt 2 ] && logger -t PPPoE-IFChecker "Another checker is running.exit." && return 1
 
-sleep 10s
+sleep 5s
 if [ "$dial_type" -eq 2 ]; then
 	#二条线掉线检测
 	sync_redial $wanselect $dial &
