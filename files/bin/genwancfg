@@ -34,7 +34,7 @@ mwan_cfg_add() {
 	#gen mwan3_interface
 	uci set mwan3.${1}=interface
 	uci set mwan3.${1}.enabled=1
-	uci set mwan3.${1}.count=1
+	uci set mwan3.${1}.count=2
 	uci set mwan3.${1}.timeout=2
 	uci set mwan3.${1}.interval=5
 	uci set mwan3.${1}.down=4
