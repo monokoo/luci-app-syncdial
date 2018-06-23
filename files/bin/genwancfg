@@ -226,7 +226,7 @@ if [ "$wannum" -gt 0 ]; then
 	for i in $(seq 1 $wannum)
 	do
 		[ "$old_frame" -eq 0 ] && macvlan_dev_add macvlan$i $pppoe_ifname
-		if[ "$bindwan" != "" -a "$bindwan" == "1" ]; then
+		if [ "$bindwan" != "" -a "$bindwan" == "1" ]; then
 			pppoe_if_add vwan$i $pppoe_ifname $pppoe_user $pppoe_password $((40+$i))
 		else
 			pppoe_if_add vwan$i macvlan$i $pppoe_user $pppoe_password $((40+$i))
@@ -260,7 +260,7 @@ fi
 		for i in $(seq 1 $wannum2)
 		do
 			[ "$old_frame" -eq 0 ] && macvlan_dev_add macvlan$(($wannum+$i)) $pppoe_ifname2
-			f[ "$bindwan2" != "" -a "$bindwan2" == "1" ]; then
+			if [ "$bindwan2" != "" -a "$bindwan2" == "1" ]; then
 				pppoe_if_add vwan$(($wannum+$i)) $pppoe_ifname2 $pppoe_user2 $pppoe_password2 $((60+$i))
 			else
 				pppoe_if_add vwan$(($wannum+$i)) macvlan$(($wannum+$i)) $pppoe_user2 $pppoe_password2 $((60+$i))
