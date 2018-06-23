@@ -24,6 +24,8 @@ o=s:option(Value,"wannum","虚拟WAN接口数量")
 o.datatype="range(0,249)"
 o.optional=false
 o.default=1
+o=s:option(Flag,"bindwan","绑定物理接口")
+o.rmempty=false
 o=s:option(Value,"wanselect2",translate("选择第二个外网接口"),translate("<font color=\"red\">指定要多拨的第二个外网接口，如wan2</font>"))
 luci.tools.webadmin.cbi_add_networks(o)
 o.optional=false
@@ -32,6 +34,9 @@ o=s:option(Value,"wannum2",translate("第二条线虚拟WAN接口数量"),transl
 o.datatype="range(0,249)"
 o.optional=false
 o.default=1
+o:depends("dial_type","2")
+o=s:option(Flag,"bindwan2","绑定物理接口","第二条线虚拟的WAN接口绑定到物理接口")
+o.rmempty=false
 o:depends("dial_type","2")
 o=s:option(Flag,"dialchk","启用掉线检测")
 o.rmempty=false

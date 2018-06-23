@@ -12,6 +12,7 @@ nomwan=$(uci get syncdial.config.nomwan)
 wanselect=$(uci get syncdial.config.wanselect)
 wannum=$(uci get syncdial.config.wannum)
 oldframe=$(uci get syncdial.config.old_frame)
+bindwan==$(uci -q get syncdial.config.bindwan)
 
 dial_type=$(uci get syncdial.config.dial_type)
 [ "$dial_type" -eq 2 ] && {
@@ -25,7 +26,8 @@ dial_type=$(uci get syncdial.config.dial_type)
 	[ $? -ne 0 ] && {
 		logger -t Syncppp  "When dualdial is enabled, the number of the second virtual WAN cannot be blank! 启用双线多拨时第二个虚拟WAN接口数不能为空！"
 		return 0
-	}	
+	}
+	bindwan2==$(uci -q get syncdial.config.bindwan2)
 }
 
 #添加MWAN负载均衡相关配置
@@ -224,7 +226,11 @@ if [ "$wannum" -gt 0 ]; then
 	for i in $(seq 1 $wannum)
 	do
 		[ "$old_frame" -eq 0 ] && macvlan_dev_add macvlan$i $pppoe_ifname
-		pppoe_if_add vwan$i macvlan$i $pppoe_user $pppoe_password $((40+$i))
+		if[ "$bindwan" != "" -a "$bindwan" == "1" ]; then
+			pppoe_if_add vwan$i $pppoe_ifname $pppoe_user $pppoe_password $((40+$i))
+		else
+			pppoe_if_add vwan$i macvlan$i $pppoe_user $pppoe_password $((40+$i))
+		fi
 		[ "$nomwan" -ne 1 ] && mwan_cfg_add vwan$i
 	done
 else
@@ -254,7 +260,11 @@ fi
 		for i in $(seq 1 $wannum2)
 		do
 			[ "$old_frame" -eq 0 ] && macvlan_dev_add macvlan$(($wannum+$i)) $pppoe_ifname2
-			pppoe_if_add vwan$(($wannum+$i)) macvlan$(($wannum+$i)) $pppoe_user2 $pppoe_password2 $((60+$i))
+			f[ "$bindwan2" != "" -a "$bindwan2" == "1" ]; then
+				pppoe_if_add vwan$(($wannum+$i)) $pppoe_ifname2 $pppoe_user2 $pppoe_password2 $((60+$i))
+			else
+				pppoe_if_add vwan$(($wannum+$i)) macvlan$(($wannum+$i)) $pppoe_user2 $pppoe_password2 $((60+$i))
+			fi
 			[ "$nomwan" -ne 1 ] && mwan_cfg_add vwan$(($wannum+$i))
 		done
 	else
