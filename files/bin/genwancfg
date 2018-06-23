@@ -12,7 +12,7 @@ nomwan=$(uci get syncdial.config.nomwan)
 wanselect=$(uci get syncdial.config.wanselect)
 wannum=$(uci get syncdial.config.wannum)
 oldframe=$(uci get syncdial.config.old_frame)
-bindwan==$(uci -q get syncdial.config.bindwan)
+bindwan=$(uci -q get syncdial.config.bindwan)
 
 dial_type=$(uci get syncdial.config.dial_type)
 [ "$dial_type" -eq 2 ] && {
@@ -27,7 +27,7 @@ dial_type=$(uci get syncdial.config.dial_type)
 		logger -t Syncppp  "When dualdial is enabled, the number of the second virtual WAN cannot be blank! 启用双线多拨时第二个虚拟WAN接口数不能为空！"
 		return 0
 	}
-	bindwan2==$(uci -q get syncdial.config.bindwan2)
+	bindwan2=$(uci -q get syncdial.config.bindwan2)
 }
 
 #添加MWAN负载均衡相关配置
