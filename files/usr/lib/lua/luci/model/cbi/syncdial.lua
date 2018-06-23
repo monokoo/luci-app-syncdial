@@ -35,7 +35,7 @@ o.datatype="range(0,249)"
 o.optional=false
 o.default=1
 o:depends("dial_type","2")
-o=s:option(Flag,"bindwan2","绑定物理接口","第二条线虚拟的WAN接口绑定到物理接口")
+o=s:option(Flag,"bindwan2","绑定物理接口","第二条线生成的虚拟接口绑定当前物理接口")
 o.rmempty=false
 o:depends("dial_type","2")
 o=s:option(Flag,"dialchk","启用掉线检测")
