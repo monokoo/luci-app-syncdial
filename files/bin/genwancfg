@@ -202,7 +202,7 @@ general_config_remove() {
 }
 
 
-[ -z "$norun" ] && uci set syncdial.config.devbackup="$origfirewall"
+[ -z "$norun" ] && uci set syncdial.config.devbackup="$origfirewall" && uci commit syncdial
 general_config_remove
 general_config_load
 
