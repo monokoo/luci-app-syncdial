@@ -112,10 +112,10 @@ orig_firewall_add() {
 
 apply_cfg() {
 	uci commit
-	[ "$enabled" -eq 1 ] && /etc/init.d/network restart
+	/etc/init.d/network reload
 	killall pppconnectcheck
-	/etc/init.d/firewall restart
-	mwan3 restart
+	/etc/init.d/firewall reload
+	mwan3 restart &
 }
 
 general_config_load() {
