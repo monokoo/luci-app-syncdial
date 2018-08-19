@@ -98,21 +98,21 @@ pppoe_if_add() {
 
 
 orig_firewall_add() {
-need_del_rule=`uci -q get firewall.@zone[1].network | awk -F"'" '{print $2}'`
-uci del_list firewall.@zone[1].network="$need_del_rule"
-for k in $( seq 1 250 )
-do
-	origdev=$(echo $origfirewall | cut -d " " -f$k)
-	if [ -z "$origdev" ]; then
-		break
-	fi
-	[ -z "$(uci get firewall.@zone[1].network | grep -w $origdev)" ] && uci add_list firewall.@zone[1].network=$origdev
-done
+	need_del_rule=`uci -q get firewall.@zone[1].network | awk -F"'" '{print $2}'`
+	uci del_list firewall.@zone[1].network="$need_del_rule"
+	for k in $( seq 1 250 )
+	do
+		origdev=$(echo $origfirewall | cut -d " " -f$k)
+		if [ -z "$origdev" ]; then
+			break
+		fi
+		[ -z "$(uci get firewall.@zone[1].network | grep -w $origdev)" ] && uci add_list firewall.@zone[1].network=$origdev
+	done
 }
 
 apply_cfg() {
 	uci commit
-	/etc/init.d/network restart
+	[ "$enabled" -eq 1 ] && /etc/init.d/network restart
 	killall pppconnectcheck
 	/etc/init.d/firewall restart
 	mwan3 restart
