@@ -112,10 +112,10 @@ orig_firewall_add() {
 
 apply_cfg() {
 	uci commit
-	/etc/init.d/network reload
+	#/etc/init.d/network restart &
+	logger -t Syncppp  "Apply syncdial configuaration."
+	ifup wan &
 	killall pppconnectcheck
-	/etc/init.d/firewall reload
-	mwan3 restart &
 }
 
 general_config_load() {
