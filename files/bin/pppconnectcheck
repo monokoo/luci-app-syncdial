@@ -8,7 +8,9 @@
 }
 
 get_ppp_num(){
-	if [ -n "$(ubus call network.interface.$1 status 2>/dev/null | jsonfilter -e '@.route[@].nexthop' 2>/dev/null)" ]; then
+	interface_proto=$(ubus call network.interface.$1 status 2>/dev/null | jsonfilter -e '@.proto' 2>/dev/null)
+	has_nexthop=$(ubus call network.interface.$1 status 2>/dev/null | jsonfilter -e '@.route[@].nexthop' 2>/dev/null)
+	if [ "$interface_proto" == "pppoe" -a -n "$has_nexthop" ]; then
 		ppp_num=1
 	else
 		ppp_num=0
