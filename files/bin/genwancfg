@@ -39,8 +39,8 @@ mwan_cfg_add() {
 	uci set mwan3.${1}.count=2
 	uci set mwan3.${1}.timeout=2
 	uci set mwan3.${1}.interval=5
-	uci set mwan3.${1}.down=4
-	uci set mwan3.${1}.up=1
+	uci set mwan3.${1}.down=5
+	uci set mwan3.${1}.up=5
 	for i in $chk_ip_list
 	do
 		uci add_list mwan3.${1}.track_ip="$i"
