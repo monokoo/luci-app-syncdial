@@ -49,6 +49,9 @@ o.datatype="range(0,248)"
 o.optional=false
 o.default=2
 o:depends("dial_type","2")
+o=s:option(Flag,"enablev6","启用虚拟接口 ipv6")
+o.rmempty=false
+o.default=0
 o=s:option(Value,"dialwait","重拨等待时间","重拨时，接口全部下线后下一次拨号前的等待时间。单位：秒 最小值：5秒")
 o.datatype="and(uinteger,min(5))"
 o.optional=false

@@ -13,6 +13,8 @@ wanselect=$(uci get syncdial.config.wanselect)
 wannum=$(uci get syncdial.config.wannum)
 oldframe=$(uci get syncdial.config.old_frame)
 bindwan=$(uci -q get syncdial.config.bindwan)
+isipv6==$(uci -q get syncdial.config.enablev6)
+[ -z "$isipv6" -o "$isipv6" -eq 1 ] && isipv6="auto"
 
 dial_type=$(uci get syncdial.config.dial_type)
 [ "$dial_type" -eq 2 ] && {
@@ -91,6 +93,7 @@ pppoe_if_add() {
 	uci set network.${1}.username=${3}
 	uci set network.${1}.password=${4}
 	uci set network.${1}.metric=${5}
+	uci set network.${1}.ipv6=$isipv6
 	uci set network.${1}.macaddr=$NEW_MACADDR
 	#gen firewall
 	uci add_list firewall.@zone[1].network=${1}
