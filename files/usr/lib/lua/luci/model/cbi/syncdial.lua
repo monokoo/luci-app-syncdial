@@ -5,7 +5,7 @@ local e=io.popen(e,"r")
 local t=e:read("*a")
 e:close()
 m=Map("syncdial",translate("多线多拨Syncppp增强版"),
-translate("使用macvlan驱动创建多个虚拟WAN口，修改pppd源码实现同步拨号，真正并发多拨。<font color=\"red\">如果需要更改参数必须先关闭多拨，设置好后再启用！</font><br />当前在线接口数量：")..t)
+translate("使用macvlan驱动创建多个虚拟WAN口，修改pppd源码实现同步拨号，真正并发多拨。<font color=\"red\">多拨请耐心等待</font><br />当前在线接口数量：")..t)
 function m.on_before_apply(self)
     luci.sys.call("mkdir -p /tmp/originconfig && cp -rf /etc/config/syncdial /tmp/originconfig/")
 end

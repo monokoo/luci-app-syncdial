@@ -13,7 +13,7 @@ wanselect=$(uci get syncdial.config.wanselect)
 wannum=$(uci get syncdial.config.wannum)
 old_frame=$(uci get syncdial.config.old_frame)
 bindwan=$(uci -q get syncdial.config.bindwan)
-isipv6==$(uci -q get syncdial.config.enablev6)
+isipv6=$(uci -q get syncdial.config.enablev6)
 originconfig="/tmp/originconfig/syncdial"
 [ -z "$isipv6" -o "$isipv6" -eq 1 ] && isipv6="auto"
 
@@ -115,10 +115,16 @@ orig_firewall_add() {
 }
 
 apply_cfg() {
+    action=$1
 	uci commit
 	#/etc/init.d/network restart &
 	logger -t Syncppp  "Apply syncdial configuaration."
-	ifup wan &
+    if [ "$action" = "disable" ]; then
+        ifup $o_wanselect &
+    else
+        ifup $wanselect &
+    fi
+    
 	killall pppconnectcheck
 }
 
@@ -135,7 +141,7 @@ general_config_load() {
 			fi
 		fi
 		echo "Disabled.Exit now."
-		apply_cfg
+		apply_cfg disable
 		exit 1
 	fi
   
@@ -237,7 +243,7 @@ if [ "$wannum" -gt 0 ]; then
 	for i in $(seq 1 $wannum)
 	do
 		[ "$old_frame" -eq 0 ] && macvlan_dev_add macvlan$i $pppoe_ifname
-		if [ "$bindwan" != "" -a "$bindwan" == "1" ]; then
+		if [ -n "$bindwan" -a "$bindwan" == "1" ]; then
 			pppoe_if_add vwan$i $pppoe_ifname $pppoe_user $pppoe_password $((40+$i))
 		else
 			pppoe_if_add vwan$i macvlan$i $pppoe_user $pppoe_password $((40+$i))
@@ -284,6 +290,6 @@ fi
 }
 
 orig_firewall_add
-apply_cfg
+apply_cfg enable
 
 return 0
