@@ -11,9 +11,10 @@ norun=$(echo $origfirewall|grep vwan)
 nomwan=$(uci get syncdial.config.nomwan)
 wanselect=$(uci get syncdial.config.wanselect)
 wannum=$(uci get syncdial.config.wannum)
-oldframe=$(uci get syncdial.config.old_frame)
+old_frame=$(uci get syncdial.config.old_frame)
 bindwan=$(uci -q get syncdial.config.bindwan)
 isipv6==$(uci -q get syncdial.config.enablev6)
+originconfig="/tmp/originconfig/syncdial"
 [ -z "$isipv6" -o "$isipv6" -eq 1 ] && isipv6="auto"
 
 dial_type=$(uci get syncdial.config.dial_type)
@@ -124,14 +125,13 @@ apply_cfg() {
 general_config_load() {
 	config_load 'syncdial'
 	config_get_bool enabled 'config' 'enabled'
-	config_get_bool old_frame 'config' 'old_frame'
 	congig_get_bool dial_type 'config' 'dial_type'
 
 	if [ "$enabled" -eq 0 ]; then
-		if [ "$old_frame" -eq 1 ]; then
-			mwan_cfg_add $wanselect
-			if [ "$dial_type" -eq 2 ]; then
-				mwan_cfg_add $wanselect2
+		if [ "$o_oldframe" -eq 1 ]; then
+			mwan_cfg_add $o_wanselect
+			if [ "$o_dial_type" -eq 2 ]; then
+				mwan_cfg_add $o_wanselect2
 			fi
 		fi
 		echo "Disabled.Exit now."
@@ -167,9 +167,11 @@ check_remove_interface() {
 }
 
 general_config_remove() {
-	config_load network
+    config_load network
+    
 	config_foreach check_remove_device 'device'
 	config_foreach check_remove_interface 'interface'
+
 	all_macvlans=`ip link show |grep macvlan | awk -F":" '{print $2}' | awk -F"@" '{print $1}'`
 	[ -n "$all_macvlans" ] && {
 		for macvlan in $all_macvlans
@@ -177,35 +179,41 @@ general_config_remove() {
 			ip link delete $macvlan
 		done
 	}
-	[ "$(uci get network.$wanselect.proto)" == "none" ] && {
-		uci set network.$wanselect.proto=pppoe
+	[ "$(uci get network.$o_wanselect.proto)" == "none" ] && {
+		uci set network.$o_wanselect.proto=pppoe
 	}
 
-	if [ "$oldframe" -eq 0 ]; then
-		[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
-		[ "$wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
-			[ "$nomwan" -ne 1 ] && mwan_cfg_del $wanselect
+	if [ "$o_oldframe" -eq 0 ]; then
+		[ "$o_wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
+		[ "$o_wanselect" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
+			[ "$nomwan" -ne 1 ] && mwan_cfg_del $o_wanselect
 	else
-		[ "$nomwan" -ne 1 ] && mwan_cfg_del $wanselect
+		[ "$nomwan" -ne 1 ] && mwan_cfg_del $o_wanselect
 	fi
 
-	[ "$dial_type" -eq 2 ] && {
-		[ $(uci get network.$wanselect2.proto) == "none" ] && {
-			uci set network.$wanselect2.proto=pppoe
+	[ "$o_dial_type" -eq 2 ] && {
+		[ $(uci get network.$o_wanselect2.proto) == "none" ] && {
+			uci set network.$o_wanselect2.proto=pppoe
 		}
 		
-		if [ "$oldframe" -eq 0 ]; then
-			[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
-			[ "$wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
-				[ "$nomwan" -ne 1 ] && mwan_cfg_del $wanselect2
+		if [ "$o_oldframe" -eq 0 ]; then
+			[ "$o_wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f1)" ] && \
+			[ "$o_wanselect2" != "$(echo $(uci get syncdial.config.devbackup)| cut -d " " -f2)" ] && \
+				[ "$nomwan" -ne 1 ] && mwan_cfg_del $o_wanselect2
 		else
-			[ "$nomwan" -ne 1 ] && mwan_cfg_del $wanselect2
+			[ "$nomwan" -ne 1 ] && mwan_cfg_del $o_wanselect2
 		fi
 	}
 }
 
 
 [ -z "$norun" ] && uci set syncdial.config.devbackup="$origfirewall" && uci commit syncdial
+[ ! -f "$originconfig" ] && originconfig="/etc/config/syncdial" #原始配置文件变量
+o_wanselect=$(uci -f $originconfig get syncdial.config.wanselect)
+o_oldframe=$(uci -f $originconfig get syncdial.config.old_frame)
+o_dial_type=$(uci -f $originconfig get syncdial.config.dial_type)
+[ "$o_dial_type" -eq 2 ] && o_wanselect2=$(uci -f $originconfig get syncdial.config.wanselect2)
+
 general_config_remove
 general_config_load
 
